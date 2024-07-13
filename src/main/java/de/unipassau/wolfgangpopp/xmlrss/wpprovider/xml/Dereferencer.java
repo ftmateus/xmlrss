@@ -24,6 +24,12 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.XMLUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 /**
  * The <code>Dereferencer</code> is used to dereference URIs within a given XML document.
@@ -84,7 +90,14 @@ public class Dereferencer {
         } else if (isSignatureInfoURI(uri)) {
             return dereferenceSignatureInfo(root);
         }
+        //TODO xpath
+        try {
+            XPath xPath = XPathFactory.newInstance().newXPath();
+            Node node = (Node) xPath.compile(uri).evaluate(root, XPathConstants.NODE);
 
-        throw new RedactableXMLSignatureException("unsupported URI");
+            return node;
+        } catch (XPathExpressionException e) {
+            throw new RedactableXMLSignatureException("unsupported URI");
+        }
     }
 }

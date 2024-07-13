@@ -124,6 +124,20 @@ public abstract class AbstractXMLRSSTest {
     }
 
     @Test
+    public void testSignSeparate() throws Exception {
+        RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
+        sig.initSign(keyPair);
+        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        sig.addSignSelector("#xpointer(id('a1'))", true);
+        sig.addSignSelector("#xpointer(id('a2'))", true);
+        sig.addSignSelector("#xpointer(id('a3'))", true);
+        Document document = sig.signSeparate();
+
+        printDocument(document);
+        validateXSD(document);
+    }
+
+    @Test
     public void testSignAndThenVerify() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);

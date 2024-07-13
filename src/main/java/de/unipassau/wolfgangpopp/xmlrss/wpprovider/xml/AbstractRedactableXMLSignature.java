@@ -35,6 +35,9 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.SignatureValue;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -167,6 +170,22 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
     }
 
     @Override
+    public Document engineSignSeparate() throws RedactableXMLSignatureException, ParserConfigurationException {
+        if (root == null) {
+            throw new RedactableXMLSignatureException("root node not set");
+        }
+
+        SignatureOutput output;
+        try {
+            output = rss.sign();
+        } catch (RedactableSignatureException e) {
+            throw new RedactableXMLSignatureException(e);
+        }
+
+        return marshallSignatureOnly(output);
+    }
+
+    @Override
     public boolean engineVerify() throws RedactableXMLSignatureException {
         if (root == null) {
             throw new RedactableXMLSignatureException("root node not set");
@@ -258,6 +277,25 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
         Node signature = sigElement.marshall(ownerDocument);
         root.appendChild(signature);
         return ownerDocument;
+    }
+
+    private Document marshallSignatureOnly(SignatureOutput output) throws RedactableXMLSignatureException, ParserConfigurationException {
+        Signature<S, P> sigElement = new Signature<>(proofClass, signatureValueClass);
+
+        sigElement.setSignatureValue(marshallSignatureValue(output))
+                .setSignatureInfo(new SignatureInfo(getCanonicalizationMethod(), getRedactableSignatureMethod()));
+
+        for (Reference<P> reference : marshallReferences(output)) {
+            sigElement.addReference(reference);
+        }
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document signatureDom = builder.newDocument();
+
+        signatureDom.appendChild(sigElement.marshall(signatureDom));
+
+        return signatureDom;
     }
 
     private SignatureOutput unmarshall() throws RedactableXMLSignatureException {

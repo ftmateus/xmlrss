@@ -349,10 +349,11 @@ public abstract class RedactableSignature {
      *                                      redactable signature algorithm cannot process the elements to be signed.
      */
     public final SignatureOutput sign() throws RedactableSignatureException {
-        if (state == STATE.SIGN) {
-            return engine.engineSign();
+        if (state != STATE.SIGN) {
+            throw new RedactableSignatureException("not initialized for signing");
         }
-        throw new RedactableSignatureException("not initialized for signing");
+
+        return engine.engineSign();
     }
 
     /**

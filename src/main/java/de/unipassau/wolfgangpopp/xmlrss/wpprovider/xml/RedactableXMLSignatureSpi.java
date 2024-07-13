@@ -27,6 +27,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -180,6 +181,8 @@ public abstract class RedactableXMLSignatureSpi {
      *                                         elements or if URIs cannot be dereferenced
      */
     public abstract Document engineSign() throws RedactableXMLSignatureException;
+
+    public abstract Document engineSignSeparate() throws RedactableXMLSignatureException, ParserConfigurationException;
 
     /**
      * Verifies the previously added document.

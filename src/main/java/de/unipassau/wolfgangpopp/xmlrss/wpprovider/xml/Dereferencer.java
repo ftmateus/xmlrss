@@ -30,6 +30,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The <code>Dereferencer</code> is used to dereference URIs within a given XML document.
@@ -37,18 +39,36 @@ import javax.xml.xpath.XPathFactory;
  * @author Wolfgang Popp
  */
 public class Dereferencer {
-    private static final String XPOINTER_BEGIN = "#xpointer(id(";
-    private static final int XPOINTER_BEGIN_LEN = XPOINTER_BEGIN.length();
-    private static final String XPOINTER_END = "))";
-    private static final int XPOINTER_END_LEN = XPOINTER_END.length();
+
+    private static final String XPOINTER_ID_REGEX = "#xpointer\\(id\\('([^']*)'\\)\\)";
+//    private static final String XPOINTER_BEGIN = "#xpointer(id(";
+//    private static final int XPOINTER_BEGIN_LEN = XPOINTER_BEGIN.length();
+//    private static final String XPOINTER_END = "))";
+//    private static final int XPOINTER_END_LEN = XPOINTER_END.length();
+    private static final String XPATH_REGEX = "#xpath\\((.*)\\)";
 
     private static boolean isRootNodeXPointer(String xPointer) {
         return xPointer.equals("#xpointer(/)");
     }
 
+    private static boolean isXPath(String uri) {
+        return Pattern.matches(XPATH_REGEX, uri);
+    }
+
+    private static String extractXPath(String uri) {
+        Matcher matcher = Pattern.compile(XPATH_REGEX).matcher(uri);
+
+        if(matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
+    }
+
     private static boolean isIdXPointer(String xPointer) {
-        return (xPointer.startsWith(XPOINTER_BEGIN + "'") && xPointer.endsWith("'" + XPOINTER_END))
-                || (xPointer.startsWith(XPOINTER_BEGIN + "\"") && xPointer.endsWith("\"" + XPOINTER_END));
+        return Pattern.matches(XPOINTER_ID_REGEX, xPointer);
+//        return (xPointer.startsWith(XPOINTER_BEGIN + "'") && xPointer.endsWith("'" + XPOINTER_END))
+//                || (xPointer.startsWith(XPOINTER_BEGIN + "\"") && xPointer.endsWith("\"" + XPOINTER_END));
     }
 
     private static boolean isSignatureInfoURI(String uri) {
@@ -56,7 +76,15 @@ public class Dereferencer {
     }
 
     private static String extractId(String xPointer) {
-        return xPointer.substring(XPOINTER_BEGIN_LEN + 1, xPointer.length() - XPOINTER_END_LEN - 1);
+        Matcher matcher = Pattern.compile(XPOINTER_ID_REGEX).matcher(xPointer);
+
+        if(matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
+
+//        return xPointer.substring(XPOINTER_BEGIN_LEN + 1, xPointer.length() - XPOINTER_END_LEN - 1);
     }
 
     private static Node dereferenceSignatureInfo(Node root) throws RedactableXMLSignatureException {
@@ -90,14 +118,18 @@ public class Dereferencer {
         } else if (isSignatureInfoURI(uri)) {
             return dereferenceSignatureInfo(root);
         }
-        //TODO xpath
-        try {
-            XPath xPath = XPathFactory.newInstance().newXPath();
-            Node node = (Node) xPath.compile(uri).evaluate(root, XPathConstants.NODE);
+        else if (isXPath(uri)) {
+            try {
+                String xpathUri = extractXPath(uri);
+                XPath xPath = XPathFactory.newInstance().newXPath();
+                Node node = (Node) xPath.compile(xpathUri).evaluate(root, XPathConstants.NODE);
 
-            return node;
-        } catch (XPathExpressionException e) {
-            throw new RedactableXMLSignatureException("unsupported URI");
+                return node;
+            } catch (XPathExpressionException e) {
+                throw new RedactableXMLSignatureException("Cannot resolve xpath expression" + uri);
+            }
         }
+
+        throw new RedactableXMLSignatureException("unsupported URI");
     }
 }

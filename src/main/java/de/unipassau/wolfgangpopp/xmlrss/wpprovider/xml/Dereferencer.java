@@ -55,7 +55,7 @@ public class Dereferencer {
         return Pattern.matches(XPATH_REGEX, uri);
     }
 
-    private static String extractXPath(String uri) {
+    public static String extractXPath(String uri) {
         Matcher matcher = Pattern.compile(XPATH_REGEX).matcher(uri);
 
         if(matcher.find()) {

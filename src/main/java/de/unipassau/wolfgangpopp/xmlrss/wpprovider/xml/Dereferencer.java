@@ -124,6 +124,9 @@ public class Dereferencer {
                 XPath xPath = XPathFactory.newInstance().newXPath();
                 Node node = (Node) xPath.compile(xpathUri).evaluate(root, XPathConstants.NODE);
 
+                if(node == null)
+                  throw new RedactableXMLSignatureException("Cannot resolve xpath expression" + uri);
+
                 return node;
             } catch (XPathExpressionException e) {
                 throw new RedactableXMLSignatureException("Cannot resolve xpath expression" + uri);

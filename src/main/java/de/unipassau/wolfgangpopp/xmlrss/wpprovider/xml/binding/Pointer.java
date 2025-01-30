@@ -30,6 +30,9 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import static de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.XMLUtils.getOwnerDocument;
 
 /**
@@ -117,18 +120,21 @@ public final class Pointer extends BindingElement<Pointer> {
      */
     public byte[] concatNode(Node node) throws RedactableXMLSignatureException {
         byte[] c14nNode;
-        try {
-            c14nNode = Canonicalizer.canonicalize(node);
-        } catch (CanonicalizationException e) {
+        try(ByteArrayOutputStream c14nNodeBaos = new ByteArrayOutputStream()) {
+            Canonicalizer.canonicalize(node, c14nNodeBaos);
+            c14nNode = c14nNodeBaos.toByteArray();
+        } catch (CanonicalizationException | IOException e) {
             throw new RedactableXMLSignatureException(e);
         }
 
-        try {
-            byte[] c14nPointer = Canonicalizer.canonicalize(marshall(getOwnerDocument(node)));
-            return new ByteArray(c14nNode).concat(c14nPointer).getArray();
-        } catch (CanonicalizationException e) {
+        byte[] c14nPointer;
+        try(ByteArrayOutputStream c14nPointerBaos = new ByteArrayOutputStream()) {
+            Canonicalizer.canonicalize(marshall(getOwnerDocument(node)), c14nPointerBaos);
+            c14nPointer = c14nPointerBaos.toByteArray();
+        } catch (CanonicalizationException | IOException e) {
             throw new RedactableXMLSignatureException(e);
         }
+        return new ByteArray(c14nNode).concat(c14nPointer).getArray();
     }
 
     @Override

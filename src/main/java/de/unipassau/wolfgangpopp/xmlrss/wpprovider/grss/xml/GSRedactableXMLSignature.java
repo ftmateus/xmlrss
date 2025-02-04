@@ -23,17 +23,18 @@ package de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.xml;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.Identifier;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.RedactableSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.SignatureOutput;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.GSRSSPublicKey;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.GSRSSSignatureOutput;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.ByteArray;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.AbstractRedactableXMLSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.RedactableXMLSignatureException;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Pointer;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Reference;
-import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.SignatureValue;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.SimpleProof;
 import org.apache.xml.security.c14n.Canonicalizer;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -115,6 +116,13 @@ public abstract class GSRedactableXMLSignature extends AbstractRedactableXMLSign
         GSRSSSignatureOutput output = builder.build();
         builder = null;
         return output;
+    }
+
+    @Override
+    protected void prepareUnmarshallPublicKey(PublicKey publicKey) {
+        ensureBuilderExists();
+
+        builder.setPublicKey((GSRSSPublicKey) publicKey);
     }
 
 

@@ -127,6 +127,8 @@ public abstract class RedactableSignatureSpi {
      */
     protected abstract SignatureOutput engineSign() throws RedactableSignatureException;
 
+    protected abstract SignatureOutput engineSign(boolean anexPublicKey) throws RedactableSignatureException;
+
     /**
      * Verifies the given signature output.
      * <p>
@@ -137,7 +139,7 @@ public abstract class RedactableSignatureSpi {
      * @return true if the signature was verified, false if not
      * @throws RedactableSignatureException if this engine cannot process the given data
      */
-    protected abstract boolean engineVerify(SignatureOutput signature) throws RedactableSignatureException;
+    protected abstract boolean engineVerify(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException;
 
     /**
      * Redacts the added parts from the given signature.

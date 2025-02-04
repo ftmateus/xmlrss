@@ -135,6 +135,8 @@ public abstract class RedactableXMLSignatureSpi {
      */
     public abstract void engineInitVerify(PublicKey publicKey) throws InvalidKeyException;
 
+    public abstract void engineInitVerify() throws InvalidKeyException;
+
     /**
      * Initializes this redactable XML signature engine for redaction.
      *
@@ -180,9 +182,9 @@ public abstract class RedactableXMLSignatureSpi {
      * @throws RedactableXMLSignatureException if the underlying redactable signature scheme cannot process the given
      *                                         elements or if URIs cannot be dereferenced
      */
-    public abstract Document engineSign() throws RedactableXMLSignatureException;
+    public abstract Document engineSign(boolean anexPublicKey) throws RedactableXMLSignatureException;
 
-    public abstract Document engineSignSeparate() throws RedactableXMLSignatureException, ParserConfigurationException;
+    public abstract Document engineSignSeparate(boolean anexPublicKey) throws RedactableXMLSignatureException, ParserConfigurationException;
 
     /**
      * Verifies the previously added document.

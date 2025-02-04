@@ -25,14 +25,11 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.RedactableSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.SignatureOutput;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.AbstractRedactableXMLSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.RedactableXMLSignatureException;
-import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Pointer;
-import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Proof;
-import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Reference;
-import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.SignatureValue;
-import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.SimpleProof;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.*;
 import org.apache.xml.security.c14n.Canonicalizer;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -120,6 +117,11 @@ abstract class PSRedactableXMLSignature extends AbstractRedactableXMLSignature<P
         PSSignatureOutput output = builder.build();
         builder = null;
         return output;
+    }
+
+    @Override
+    protected void prepareUnmarshallPublicKey(PublicKey publicKey) {
+        throw new UnsupportedOperationException();
     }
 
     public static class XMLPSRSSwithPSA extends PSRedactableXMLSignature {

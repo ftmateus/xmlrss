@@ -131,7 +131,7 @@ public abstract class AbstractXMLRSSTest {
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", true);
         sig.addSignSelector("#xpointer(id('a3'))", true);
-        Document document = sig.signSeparate();
+        Document document = sig.signSeparate(false);
 
         printDocument(document);
         validateXSD(document);

@@ -404,19 +404,23 @@ public abstract class RedactableXMLSignature {
      *                                         underlying algorithms cannot process the requested elements
      */
     public final Document sign() throws RedactableXMLSignatureException {
-        if (state != STATE.SIGN) {
-            throw new RedactableXMLSignatureException("not initialized for signing");
-        }
-
-        return engine.engineSign();
+        return sign(false);
     }
 
-    public final Document signSeparate() throws RedactableXMLSignatureException, ParserConfigurationException {
+    public final Document sign(boolean anexPublicKey) throws RedactableXMLSignatureException {
         if (state != STATE.SIGN) {
             throw new RedactableXMLSignatureException("not initialized for signing");
         }
 
-        return engine.engineSignSeparate();
+        return engine.engineSign(anexPublicKey);
+    }
+
+    public final Document signSeparate(boolean anexPublicKey) throws RedactableXMLSignatureException, ParserConfigurationException {
+        if (state != STATE.SIGN) {
+            throw new RedactableXMLSignatureException("not initialized for signing");
+        }
+
+        return engine.engineSignSeparate(anexPublicKey);
     }
 
     /**

@@ -123,6 +123,14 @@ public abstract class GLRedactableSignature extends RedactableSignatureSpi {
 
     @Override
     protected SignatureOutput engineSign() throws RedactableSignatureException {
+        return engineSign(false);
+    }
+
+    @Override
+    protected SignatureOutput engineSign(boolean anexPublicKey) throws RedactableSignatureException {
+        if(anexPublicKey)
+            throw new UnsupportedOperationException("Anex public key is not implemented for this algorithm!");
+
 
         GLRSSSignatureOutput.Builder builder = new GLRSSSignatureOutput.Builder(parts.size());
         byte[][] randomValues = new byte[parts.size()][accByteLength];
@@ -167,7 +175,7 @@ public abstract class GLRedactableSignature extends RedactableSignatureSpi {
     }
 
     @Override
-    protected boolean engineVerify(SignatureOutput signature) throws RedactableSignatureException {
+    protected boolean engineVerify(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException {
         if (!(signature instanceof GLRSSSignatureOutput)) {
             throw new RedactableSignatureException("wrong signature type");
         }

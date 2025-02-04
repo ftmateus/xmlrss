@@ -75,6 +75,10 @@ public class Dereferencer {
         return "SignatureInfo".equals(uri);
     }
 
+    private static boolean isSignaturePublicKeyURI(String uri) {
+        return "SignaturePublicKey".equals(uri);
+    }
+
     private static String extractId(String xPointer) {
         Matcher matcher = Pattern.compile(XPOINTER_ID_REGEX).matcher(xPointer);
 
@@ -90,6 +94,17 @@ public class Dereferencer {
     private static Node dereferenceSignatureInfo(Node root) throws RedactableXMLSignatureException {
         Node signatureNode = XMLUtils.getSignatureNode(root);
         return XMLUtils.checkNode(signatureNode.getFirstChild(), "SignatureInfo");
+    }
+
+    private static Node dereferenceSignaturePublicKey(Node root) throws RedactableXMLSignatureException {
+        Node signatureNode = XMLUtils.getSignatureNode(root);
+        for(int n = 0; n < signatureNode.getChildNodes().getLength(); n++) {
+            Node node = signatureNode.getChildNodes().item(n);
+            if(node.getNodeName().equals("PublicKeys")) {
+                return node;
+            }
+        }
+        return null;
     }
 
     /**
@@ -117,6 +132,8 @@ public class Dereferencer {
             return element;
         } else if (isSignatureInfoURI(uri)) {
             return dereferenceSignatureInfo(root);
+        } else if(isSignaturePublicKeyURI(uri)) {
+            return dereferenceSignaturePublicKey(root);
         }
         else if (isXPath(uri)) {
             try {

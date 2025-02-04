@@ -31,6 +31,7 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Reference;
 import org.apache.xml.security.c14n.Canonicalizer;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -116,6 +117,11 @@ public abstract class GLRedactableXMLSignature extends AbstractRedactableXMLSign
         GLRSSSignatureOutput signatureOutput = builder.build();
         builder = null;
         return signatureOutput;
+    }
+
+    @Override
+    protected void prepareUnmarshallPublicKey(PublicKey publicKey) {
+        throw new UnsupportedOperationException();
     }
 
 

@@ -20,6 +20,10 @@
 
 package de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding;
 
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.BPPublicKey;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.GSRSSPublicKey;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.GSRedactableSignature;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.xml.GSSignatureValue;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.RedactableXMLSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.RedactableXMLSignatureException;
 import org.w3c.dom.Document;
@@ -27,7 +31,14 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -60,7 +71,11 @@ public final class Signature<S extends SignatureValue, P extends Proof> extends 
     private final Class<S> signatureValueClass;
     private List<Reference<P>> references = new ArrayList<>();
     private S signatureValue;
+    private java.security.PublicKey publicKey;
     private SignatureInfo signatureInfo;
+
+    private final Base64.Encoder base64Encoder = Base64.getEncoder();
+    private final Base64.Decoder base64Decoder = Base64.getDecoder();
 
     /**
      * Constructs a new signature object whose signature value and proofs are the given classes.
@@ -69,8 +84,13 @@ public final class Signature<S extends SignatureValue, P extends Proof> extends 
      * @param signatureValueClass the class of the used signature value (same as the type parameter S)
      */
     public Signature(Class<P> proofClass, Class<S> signatureValueClass) {
+        this(proofClass, signatureValueClass, null);
+    }
+
+    public Signature(Class<P> proofClass, Class<S> signatureValueClass, PublicKey publicKey) {
         this.proofClass = proofClass;
         this.signatureValueClass = signatureValueClass;
+        this.publicKey = publicKey;
     }
 
     /**
@@ -81,6 +101,8 @@ public final class Signature<S extends SignatureValue, P extends Proof> extends 
     public SignatureInfo getSignatureInfo() {
         return signatureInfo;
     }
+
+    public PublicKey getPublicKey() { return publicKey; }
 
     /**
      * Returns the list of references.
@@ -154,21 +176,114 @@ public final class Signature<S extends SignatureValue, P extends Proof> extends 
             throw new RedactableXMLSignatureException(signatureValueClass.getName() +
                     " has no public default constructor", e);
         }
+
+        try {
+            unmarshallPublicKeys(node);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RedactableXMLSignatureException(signatureValueClass.getName() +
+                    ": Error on public keys unmarshall.", e);
+        }
+
         return this;
+    }
+
+    private void unmarshallPublicKeys(Node signature) throws RedactableXMLSignatureException, NoSuchAlgorithmException, InvalidKeySpecException {
+        Node publicKeysNode = signature.getLastChild();
+
+        if(publicKeysNode == null
+        || !publicKeysNode.getNodeName().equals("PublicKeys"))
+            return;
+
+        if(signatureValueClass == GSSignatureValue.class)  {
+            PublicKey dSigPublicKey = unmarshallPublicKey(publicKeysNode, "DSigPublicKey", "RSA");
+            PublicKey accPublicKey = unmarshallPublicKey(publicKeysNode, "AccPublicKey", "BPA");
+
+            this.publicKey = new GSRSSPublicKey("GSRSSwithRSAandBPA", dSigPublicKey, accPublicKey);
+        }
+
+
+    }
+
+    private java.security.PublicKey unmarshallPublicKey(Node publicKeysNode, String publicKeyNodeName, String algorithm) throws RedactableXMLSignatureException, NoSuchAlgorithmException, InvalidKeySpecException {
+        NodeList elems = publicKeysNode.getChildNodes();
+        Node publicKeyElem = null;
+
+        for(int e = 0; e < elems.getLength(); e++) {
+            publicKeyElem = elems.item(e);
+            if(publicKeyElem.getNodeName().equals(publicKeyNodeName))
+                break;
+        }
+
+        if(publicKeyElem == null
+        || !publicKeyElem.getNodeName().equals(publicKeyNodeName))
+            return null;
+
+        byte[] decodedDSigPublicKey = base64Decoder.decode(publicKeyElem.getTextContent());
+
+        if(publicKeyNodeName.equals("AccPublicKey"))
+            return parseAccumulatorPublicKey(decodedDSigPublicKey);
+
+        return parsePublicKey(decodedDSigPublicKey, algorithm);
+    }
+
+    private java.security.PublicKey parseAccumulatorPublicKey(byte[] data) {
+        BigInteger bigint = new BigInteger(data);
+        return new BPPublicKey(bigint);
+    }
+
+    private java.security.PublicKey parsePublicKey(byte[] data, String algorithm) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
+
+        return KeyFactory.getInstance(algorithm)
+                .generatePublic(spec);
     }
 
     @Override
     public Node marshall(Document document) {
-        Element element = createThisElement(document);
-        element.appendChild(signatureInfo.marshall(document));
-        Node references = element.appendChild(createElement(document, "References"));
+        Element docElem = createThisElement(document);
+        docElem.appendChild(signatureInfo.marshall(document));
+        Node references = docElem.appendChild(createElement(document, "References"));
         for (Reference reference : this.references) {
             references.appendChild(reference.marshall(document));
         }
 
-        element.appendChild(references);
-        element.appendChild(signatureValue.marshall(document));
-        element.setAttribute("xmlns", RedactableXMLSignature.XML_NAMESPACE);
-        return element;
+        docElem.appendChild(references);
+        docElem.appendChild(signatureValue.marshall(document));
+        docElem.setAttribute("xmlns", RedactableXMLSignature.XML_NAMESPACE);
+
+        if(publicKey != null)
+            marshallPublicKeys(document, docElem);
+
+        return docElem;
+    }
+
+    private void marshallPublicKeys(Document document, Node signature) {
+
+        Element publicKeysElem = createElement(document, "PublicKeys");
+        PublicKey dSigPublicKey = null;
+
+        if(signatureValueClass == GSSignatureValue.class)  {
+            PublicKey accPublicKey = ((GSRSSPublicKey) publicKey).getAccumulatorKey();
+            marshallPublicKey(document, publicKeysElem, "AccPublicKey", accPublicKey);
+
+            dSigPublicKey = ((GSRSSPublicKey) publicKey).getDSigKey();
+        }
+        else
+            dSigPublicKey = publicKey;
+
+        marshallPublicKey(document, publicKeysElem, "DSigPublicKey", dSigPublicKey);
+
+        signature.appendChild(publicKeysElem);
+    }
+
+    private void marshallPublicKey(
+            Document document,
+            Node publicKeysNode,
+            String publicKeyNodeName,
+            PublicKey publicKey) {
+        Element publicKeyElem = createElement(document, publicKeyNodeName);
+        publicKeyElem.setTextContent(base64Encoder.encodeToString(publicKey.getEncoded()));
+        publicKeysNode.appendChild(publicKeyElem);
+
     }
 }

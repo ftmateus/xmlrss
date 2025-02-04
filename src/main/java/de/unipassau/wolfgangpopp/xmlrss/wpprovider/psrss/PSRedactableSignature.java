@@ -121,7 +121,17 @@ abstract class PSRedactableSignature extends RedactableSignatureSpi {
         }
     }
 
+    @Override
     protected SignatureOutput engineSign() throws RedactableSignatureException {
+        return engineSign(false);
+    }
+
+
+    @Override
+    protected SignatureOutput engineSign(boolean anexPublicKey) throws RedactableSignatureException {
+        if(anexPublicKey)
+            throw new UnsupportedOperationException("Anex public key is not implemented on this algorithm!");
+
         final byte[] acc;
         byte[][] pts = new byte[parts.size()][];
 
@@ -190,16 +200,13 @@ abstract class PSRedactableSignature extends RedactableSignatureSpi {
             throw new RedactableSignatureException(e);
         }
 
-        final byte tag[] = sig.getTag();
+        final byte[] tag = sig.getTag();
 
         Function<PSSignatureOutput.SignedPart, Boolean> verifyFunction =
-                new Function<PSSignatureOutput.SignedPart, Boolean>() {
-                    @Override
-                    public Boolean execute(PSSignatureOutput.SignedPart argument) throws Exception {
-                        byte[] proof = argument.getProof();
-                        byte[] value = argument.getElement().getArray();
-                        return accumulator.verify(proof, concat(tag, value));
-                    }
+                argument -> {
+                    byte[] proof = argument.getProof();
+                    byte[] value = argument.getElement().getArray();
+                    return accumulator.verify(proof, concat(tag, value));
                 };
 
         Collection<Boolean> results = map(verifyFunction, sig);

@@ -24,6 +24,7 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.Identifier;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.RedactableSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.RedactableSignatureException;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.SignatureOutput;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.GSRSSSignatureOutput;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.ByteArray;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.XMLUtils;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Pointer;
@@ -72,6 +73,7 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
     private final Map<ByteArray, Pointer> pointers = new HashMap<>();
     private final List<String> uris = new ArrayList<>();
     private final Set<String> redactUris = new HashSet<>();
+//    private PublicKey publicKey;
 
     /**
      * Constructss a new AbstractRedactableXMLSignature with the given underlying redactable signature scheme and proof
@@ -99,6 +101,12 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
     public void engineInitVerify(PublicKey publicKey) throws InvalidKeyException {
         reset();
         rss.initVerify(publicKey);
+    }
+
+    @Override
+    public void engineInitVerify() throws InvalidKeyException {
+        reset();
+        rss.initVerify(null);
     }
 
     @Override
@@ -154,14 +162,14 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
     }
 
     @Override
-    public Document engineSign() throws RedactableXMLSignatureException {
+    public Document engineSign(boolean anexPublicKey) throws RedactableXMLSignatureException {
         if (root == null) {
             throw new RedactableXMLSignatureException("root node not set");
         }
 
         SignatureOutput output;
         try {
-            output = rss.sign();
+            output = rss.sign(anexPublicKey);
         } catch (RedactableSignatureException e) {
             throw new RedactableXMLSignatureException(e);
         }
@@ -170,14 +178,14 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
     }
 
     @Override
-    public Document engineSignSeparate() throws RedactableXMLSignatureException, ParserConfigurationException {
+    public Document engineSignSeparate(boolean anexPublicKey) throws RedactableXMLSignatureException, ParserConfigurationException {
         if (root == null) {
             throw new RedactableXMLSignatureException("root node not set");
         }
 
         SignatureOutput output;
         try {
-            output = rss.sign();
+            output = rss.sign(anexPublicKey);
         } catch (RedactableSignatureException e) {
             throw new RedactableXMLSignatureException(e);
         }
@@ -191,9 +199,10 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
             throw new RedactableXMLSignatureException("root node not set");
         }
         checkNode(getSignatureNode(root).getFirstChild(), "SignatureInfo");
+
         try {
             return rss.verify(unmarshall());
-        } catch (RedactableSignatureException e) {
+        } catch (RedactableSignatureException | InvalidKeyException e) {
             throw new RedactableXMLSignatureException(e);
         }
     }
@@ -264,7 +273,16 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
     }
 
     private Document marshall(SignatureOutput output) throws RedactableXMLSignatureException {
-        Signature<S, P> sigElement = new Signature<>(proofClass, signatureValueClass);
+        Signature<S, P> sigElement = null;
+        if(output instanceof GSRSSSignatureOutput) {
+            PublicKey publicKey = ((GSRSSSignatureOutput) output).getPublicKey();
+            if(publicKey != null) {
+                sigElement = new Signature<>(proofClass, signatureValueClass, publicKey);
+            }
+        }
+        if(sigElement == null) {
+            sigElement = new Signature<>(proofClass, signatureValueClass, null);
+        }
 
         sigElement.setSignatureValue(marshallSignatureValue(output))
                 .setSignatureInfo(new SignatureInfo(getCanonicalizationMethod(), getRedactableSignatureMethod()));
@@ -304,7 +322,7 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
 
     private Signature<S, P> unmarshallXML() throws RedactableXMLSignatureException {
         Node signatureNode = getSignatureNode(root);
-        Signature<S, P> signature = new Signature<>(proofClass, signatureValueClass);
+        Signature<S, P> signature = new Signature<>(proofClass, signatureValueClass, null);
         return signature.unmarshall(signatureNode);
     }
 
@@ -319,6 +337,10 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
             P proof = references.get(i).getProof();
             prepareUnmarshallReference(references.size(), i, pointer, proof);
         }
+
+        if(signature.getPublicKey() != null)
+            prepareUnmarshallPublicKey(signature.getPublicKey());
+
 
         return doUnmarshall();
     }
@@ -427,4 +449,6 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
      * @throws RedactableXMLSignatureException if unmarshalling cannot be executed
      */
     protected abstract SignatureOutput doUnmarshall() throws RedactableXMLSignatureException;
+
+    protected abstract void prepareUnmarshallPublicKey(PublicKey publicKey);
 }

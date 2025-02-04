@@ -348,12 +348,16 @@ public abstract class RedactableSignature {
      * @throws RedactableSignatureException if this RedactableSignature object is not initialized properly. Or if this
      *                                      redactable signature algorithm cannot process the elements to be signed.
      */
-    public final SignatureOutput sign() throws RedactableSignatureException {
+    public final SignatureOutput sign(boolean anexPublicKey) throws RedactableSignatureException {
         if (state != STATE.SIGN) {
             throw new RedactableSignatureException("not initialized for signing");
         }
 
-        return engine.engineSign();
+        return engine.engineSign(anexPublicKey);
+    }
+
+    public final SignatureOutput sign() throws RedactableSignatureException {
+        return sign(false);
     }
 
     /**
@@ -371,7 +375,7 @@ public abstract class RedactableSignature {
      * @throws RedactableSignatureException if this RedactableSignature object is not initialized properly. Or if this
      *                                      redactable signature algorithm cannot process the elements to be verified.
      */
-    public final boolean verify(SignatureOutput signature) throws RedactableSignatureException {
+    public final boolean verify(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException {
         if (state == STATE.VERIFY) {
             return engine.engineVerify(signature);
         }

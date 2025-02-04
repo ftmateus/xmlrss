@@ -22,14 +22,20 @@ package de.unipassau.wolfgangpopp.xmlrss.wpprovider.grss.xml;
 
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.AbstractXMLRSSTest;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.WPProvider;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.Dereferencer;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.RedactableXMLSignature;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.RedactableXMLSignatureException;
 import org.junit.Test;
+import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.XMLUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -72,5 +78,24 @@ public class GSRedactableXMLSignatureTest extends AbstractXMLRSSTest {
         sig.setDocument(document);
         sig.addRedactSelector("#xpointer(id('a2'))");
         sig.redact();
+    }
+
+    @Test
+    public void testAnexPublicKey() throws Exception {
+        RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
+        sig.initSign(keyPair);
+        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        sig.addSignSelector("#xpointer(id('a1'))", true);
+        sig.addSignSelector("#xpointer(id('a2'))", false);
+
+        Document document = sig.sign(true);
+        printDocument(document);
+
+        Node publicKeyNode = Dereferencer.dereference("SignaturePublicKey", document);
+        assertNotNull(publicKeyNode);
+
+        sig.initVerify(null);
+        sig.setDocument(document);
+        assertTrue(sig.verify());
     }
 }

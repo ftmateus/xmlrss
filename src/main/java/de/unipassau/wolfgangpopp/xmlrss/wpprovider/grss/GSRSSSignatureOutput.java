@@ -24,6 +24,7 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.Identifier;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.SignatureOutput;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.ByteArray;
 
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ public class GSRSSSignatureOutput implements SignatureOutput {
     private final Map<ByteArray, Boolean> redactableMapping = new HashMap<>();
     private byte[] dSigValue;
     private byte[] accumulatorValue;
+    private PublicKey publicKey;
 
     GSRSSSignatureOutput() {
 
@@ -95,6 +97,8 @@ public class GSRSSSignatureOutput implements SignatureOutput {
         return Arrays.copyOf(accumulatorValue, accumulatorValue.length);
     }
 
+    public PublicKey getPublicKey() { return publicKey; }
+
     public Set<ByteArray> getNonRedactableParts() {
         Set<ByteArray> nonRedactableParts = new HashSet<>();
         for (Map.Entry<ByteArray, Boolean> part : redactableMapping.entrySet()) {
@@ -120,6 +124,11 @@ public class GSRSSSignatureOutput implements SignatureOutput {
 
         public Builder setDSigValue(byte[] dSigValue) {
             signatureOutput.dSigValue = dSigValue;
+            return this;
+        }
+
+        public Builder setPublicKey(PublicKey publicKey) {
+            signatureOutput.publicKey = publicKey;
             return this;
         }
 

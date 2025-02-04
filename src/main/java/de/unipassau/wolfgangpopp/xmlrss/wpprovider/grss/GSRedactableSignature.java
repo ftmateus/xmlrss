@@ -88,6 +88,14 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
     @Override
     protected void engineInitVerify(PublicKey publicKey) throws InvalidKeyException {
         reset();
+        if(publicKey == null)
+            return;
+        checkAndSetPublicKey(publicKey);
+        dsig.initVerify(dsigPublicKey);
+        accumulator.initVerify(accPublicKey);
+    }
+
+    protected void engineSetPublicKey(PublicKey publicKey) throws InvalidKeyException {
         checkAndSetPublicKey(publicKey);
         dsig.initVerify(dsigPublicKey);
         accumulator.initVerify(accPublicKey);
@@ -115,6 +123,11 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
 
     @Override
     protected SignatureOutput engineSign() throws RedactableSignatureException {
+        return engineSign(false);
+    }
+
+    @Override
+    protected SignatureOutput engineSign(boolean anexPublicKey) throws RedactableSignatureException {
         byte[][] elements = new byte[messageParts.size()][];
         GSRSSSignatureOutput.Builder builder = new GSRSSSignatureOutput.Builder();
 
@@ -160,18 +173,31 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
             }
         }
 
+        if(anexPublicKey) {
+            builder.setPublicKey(
+                new GSRSSPublicKey(dsig.getAlgorithm(), dsigPublicKey, accPublicKey)
+            );
+        }
+
         messageParts.clear();
 
         return builder.build();
     }
 
     @Override
-    protected boolean engineVerify(SignatureOutput signature) throws RedactableSignatureException {
+    protected boolean engineVerify(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException {
         if (!(signature instanceof GSRSSSignatureOutput)) {
             throw new RedactableSignatureException("wrong signature type");
         }
 
         GSRSSSignatureOutput signatureOutput = ((GSRSSSignatureOutput) signature);
+
+        if(accPublicKey == null || dsigPublicKey == null) {
+            if(signatureOutput.getPublicKey() != null) {
+                engineSetPublicKey(signatureOutput.getPublicKey());
+            }
+        }
+        assert accPublicKey != null && dsigPublicKey != null;
 
         try {
             accumulator.restoreVerify(signatureOutput.getAccumulatorValue());

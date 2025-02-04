@@ -47,7 +47,7 @@ public class BPKey implements Key {
 
     @Override
     public byte[] getEncoded() {
-        return new byte[0];
+        return key.toByteArray();
     }
 
     public BigInteger getKey() {

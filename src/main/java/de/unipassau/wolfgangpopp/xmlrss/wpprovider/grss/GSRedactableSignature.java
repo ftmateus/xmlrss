@@ -104,6 +104,9 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
     @Override
     protected void engineInitRedact(PublicKey publicKey) throws InvalidKeyException {
         reset();
+        if(publicKey == null)
+            return;
+
         checkAndSetPublicKey(publicKey);
     }
 
@@ -234,11 +237,19 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
     }
 
     @Override
-    protected SignatureOutput engineRedact(SignatureOutput signature) throws RedactableSignatureException {
+    protected SignatureOutput engineRedact(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException {
         if (!(signature instanceof GSRSSSignatureOutput)) {
             throw new RedactableSignatureException("wrong signature type");
         }
         GSRSSSignatureOutput signatureOutput = (GSRSSSignatureOutput) signature;
+
+        if(accPublicKey == null || dsigPublicKey == null) {
+            if(signatureOutput.getPublicKey() != null) {
+                engineSetPublicKey(signatureOutput.getPublicKey());
+            }
+        }
+        assert accPublicKey != null && dsigPublicKey != null;
+
         GSRSSSignatureOutput.Builder builder = new GSRSSSignatureOutput.Builder();
         Map<ByteArray, byte[]> signedParts = signatureOutput.getParts();
         Set<ByteArray> parts = signedParts.keySet();
@@ -258,6 +269,10 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
                 builder.addSignedPart(part, signedParts.get(part), signatureOutput.isRedactable(new Identifier(part)));
             }
         }
+
+        builder.setPublicKey(
+                new GSRSSPublicKey(dsig.getAlgorithm(), dsigPublicKey, accPublicKey)
+        );
 
         messageParts.clear();
 

@@ -151,7 +151,7 @@ public abstract class RedactableSignatureSpi {
      * @return a redacted version of the given signature
      * @throws RedactableSignatureException if this engine cannot process the given data
      */
-    protected abstract SignatureOutput engineRedact(SignatureOutput signature) throws RedactableSignatureException;
+    protected abstract SignatureOutput engineRedact(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException;
 
     /**
      * Merges the two given signatures.

@@ -145,6 +145,7 @@ public abstract class RedactableXMLSignatureSpi {
      */
     public abstract void engineInitRedact(PublicKey publicKey) throws InvalidKeyException;
 
+    public abstract void engineInitRedact() throws InvalidKeyException;
     /**
      * Adds an URI for signing.
      * <p>

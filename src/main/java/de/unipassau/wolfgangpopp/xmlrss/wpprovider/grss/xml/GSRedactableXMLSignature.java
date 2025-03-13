@@ -33,6 +33,7 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.Reference;
 import de.unipassau.wolfgangpopp.xmlrss.wpprovider.xml.binding.SimpleProof;
 import org.apache.xml.security.c14n.Canonicalizer;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.Collection;

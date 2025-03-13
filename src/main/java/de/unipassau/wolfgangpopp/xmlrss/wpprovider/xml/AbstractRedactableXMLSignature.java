@@ -115,6 +115,12 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
         rss.initRedact(publicKey);
     }
 
+    @Override
+    public void engineInitRedact() throws InvalidKeyException {
+        reset();
+        rss.initRedact(null);
+    }
+
     private void reset() {
         root = null;
         pointers.clear();
@@ -230,7 +236,7 @@ public abstract class AbstractRedactableXMLSignature<S extends SignatureValue, P
 
         try {
             redacted = rss.redact(original);
-        } catch (RedactableSignatureException e) {
+        } catch (RedactableSignatureException | InvalidKeyException e) {
             throw new RedactableXMLSignatureException(e);
         }
 

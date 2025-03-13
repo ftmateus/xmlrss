@@ -205,7 +205,7 @@ public abstract class GLRedactableSignature extends RedactableSignatureSpi {
     }
 
     @Override
-    protected SignatureOutput engineRedact(SignatureOutput signature) throws RedactableSignatureException {
+    protected SignatureOutput engineRedact(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException {
         if (!(signature instanceof GLRSSSignatureOutput)) {
             throw new RedactableSignatureException("wrong signature type");
         }

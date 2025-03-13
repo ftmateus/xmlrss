@@ -395,7 +395,7 @@ public abstract class RedactableSignature {
      * @throws RedactableSignatureException if this RedactableSignature object is not initialized properly. Or if this
      *                                      redactable signature algorithm cannot process the elements to be redacted.
      */
-    public final SignatureOutput redact(SignatureOutput signature) throws RedactableSignatureException {
+    public final SignatureOutput redact(SignatureOutput signature) throws RedactableSignatureException, InvalidKeyException {
         if (state == STATE.REDACT) {
             return engine.engineRedact(signature);
         }

@@ -44,6 +44,7 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -141,7 +142,9 @@ public abstract class AbstractXMLRSSTest {
     public void testSignAndThenVerify() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try (InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", true);
         sig.addSignSelector("#xpointer(id('a3'))", true);
@@ -158,7 +161,9 @@ public abstract class AbstractXMLRSSTest {
     public void testVerifyFalseModifiedDoc() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try (InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", true);
         sig.addSignSelector("#xpointer(id('a3'))", true);
@@ -177,7 +182,9 @@ public abstract class AbstractXMLRSSTest {
     public void testVerifyFalseModfiedSig() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try (InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", true);
         sig.addSignSelector("#xpointer(id('a3'))", true);
@@ -201,7 +208,9 @@ public abstract class AbstractXMLRSSTest {
     public void testSignThenRedactAndThenVerify() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try (InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", true);
         sig.addSignSelector("#xpointer(id('a3'))", true);
@@ -229,7 +238,10 @@ public abstract class AbstractXMLRSSTest {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
 
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try (InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
+
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('g1'))", true);
         sig.addSignSelector("#xpointer(id('j1'))", true);
@@ -255,27 +267,33 @@ public abstract class AbstractXMLRSSTest {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
 
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/test1.xml"), schema);
-        sig.addSignSelector("#xpointer(id('i1'))", true);
-        sig.addSignSelector("#xpointer(id('l1'))", true);
-        sig.addSignSelector("#xpointer(id('e1'))", true);
-        sig.addSignSelector("#xpointer(id('e2'))", true);
-        sig.addSignSelector("#xpointer(id('e3'))", true);
-        sig.addSignSelector("#xpointer(id('i3'))", true);
-        sig.addSignSelector("#xpointer(id('i2'))", true);
-        sig.addSignSelector("#xpointer(id('s1'))", true);
+        try (InputStream is = new FileInputStream("testdata/test1.xml")) {
+            sig.setDocument(is, schema);
+        }
+        final String[] redactableSelectors = {
+                "#xpointer(id('i1'))", "#xpointer(id('l1'))", "#xpointer(id('e1'))",
+                "#xpointer(id('e2'))", "#xpointer(id('e3'))", "#xpointer(id('i3'))",
+                "#xpointer(id('i2'))", "#xpointer(id('s1'))"
+        };
+
+        for(String selectorUri : redactableSelectors)
+            sig.addSignSelector(selectorUri, true);
+
         Document document = sig.sign();
 
         printDocument(document);
 
         sig.initRedact(keyPair.getPublic());
         sig.setDocument(document);
-        sig.addRedactSelector("#xpointer(id('i1'))");
-        sig.addRedactSelector("#xpointer(id('e2'))");
-        sig.addRedactSelector("#xpointer(id('e3'))");
-        sig.addRedactSelector("#xpointer(id('e1'))");
-        sig.addRedactSelector("#xpointer(id('l1'))");
-        sig.addRedactSelector("#xpointer(id('i3'))");
+
+        final String[] toRedact = {
+                "#xpointer(id('i1'))", "#xpointer(id('e2'))",  "#xpointer(id('e3'))",
+                "#xpointer(id('e1'))", "#xpointer(id('l1'))", "#xpointer(id('i3'))",
+        };
+
+        for(String selectorUri : toRedact)
+            sig.addRedactSelector(selectorUri);
+
         sig.redact();
 
         printDocument(document);
@@ -290,7 +308,9 @@ public abstract class AbstractXMLRSSTest {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
 
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try (InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a1'))", true);
     }

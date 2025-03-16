@@ -243,9 +243,11 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
         }
         GSRSSSignatureOutput signatureOutput = (GSRSSSignatureOutput) signature;
 
+        boolean anexPublicKey = false;
         if(accPublicKey == null || dsigPublicKey == null) {
             if(signatureOutput.getPublicKey() != null) {
                 engineSetPublicKey(signatureOutput.getPublicKey());
+                anexPublicKey = true;
             }
         }
         assert accPublicKey != null && dsigPublicKey != null;
@@ -270,9 +272,11 @@ public abstract class GSRedactableSignature extends RedactableSignatureSpi {
             }
         }
 
-        builder.setPublicKey(
-                new GSRSSPublicKey(dsig.getAlgorithm(), dsigPublicKey, accPublicKey)
-        );
+        if(anexPublicKey) {
+            builder.setPublicKey(
+                    new GSRSSPublicKey(dsig.getAlgorithm(), dsigPublicKey, accPublicKey)
+            );
+        }
 
         messageParts.clear();
 

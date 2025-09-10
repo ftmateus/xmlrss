@@ -24,7 +24,6 @@ import de.unipassau.wolfgangpopp.xmlrss.wpprovider.utils.XMLUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -79,6 +78,8 @@ public class Dereferencer {
         return "SignaturePublicKey".equals(uri);
     }
 
+    private static boolean isSignatureValueURI(String uri) { return "SignatureValue".equals(uri); }
+
     private static String extractId(String xPointer) {
         Matcher matcher = Pattern.compile(XPOINTER_ID_REGEX).matcher(xPointer);
 
@@ -91,20 +92,28 @@ public class Dereferencer {
 //        return xPointer.substring(XPOINTER_BEGIN_LEN + 1, xPointer.length() - XPOINTER_END_LEN - 1);
     }
 
-    private static Node dereferenceSignatureInfo(Node root) throws RedactableXMLSignatureException {
+    private static Node dereferenceRSSSignatureNode(Node root, String nodeName) throws RedactableXMLSignatureException {
         Node signatureNode = XMLUtils.getSignatureNode(root);
-        return XMLUtils.checkNode(signatureNode.getFirstChild(), "SignatureInfo");
-    }
 
-    private static Node dereferenceSignaturePublicKey(Node root) throws RedactableXMLSignatureException {
-        Node signatureNode = XMLUtils.getSignatureNode(root);
         for(int n = 0; n < signatureNode.getChildNodes().getLength(); n++) {
             Node node = signatureNode.getChildNodes().item(n);
-            if(node.getNodeName().equals("PublicKeys")) {
+            if(node.getNodeName().equals(nodeName)) {
                 return node;
             }
         }
         return null;
+    }
+
+    private static Node dereferenceSignatureInfo(Node root) throws RedactableXMLSignatureException {
+        return dereferenceRSSSignatureNode(root, "SignatureInfo");
+    }
+
+    private static Node dereferenceSignaturePublicKeys(Node root) throws RedactableXMLSignatureException {
+        return dereferenceRSSSignatureNode(root, "PublicKeys");
+    }
+
+    private static Node dereferenceSignatureValue(Node root) throws RedactableXMLSignatureException {
+        return dereferenceRSSSignatureNode(root, "SignatureValue");
     }
 
     /**
@@ -133,7 +142,9 @@ public class Dereferencer {
         } else if (isSignatureInfoURI(uri)) {
             return dereferenceSignatureInfo(root);
         } else if(isSignaturePublicKeyURI(uri)) {
-            return dereferenceSignaturePublicKey(root);
+            return dereferenceSignaturePublicKeys(root);
+        } else if(isSignatureValueURI(uri)) {
+            return dereferenceSignatureValue(root);
         }
         else if (isXPath(uri)) {
             try {

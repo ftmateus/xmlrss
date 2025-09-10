@@ -32,6 +32,7 @@ import org.w3c.dom.Node;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -52,7 +53,9 @@ public class GSRedactableXMLSignatureTest extends AbstractXMLRSSTest {
     public void testAddNonRedactable() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try(InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", false);
         Document document = sig.sign();
@@ -68,7 +71,9 @@ public class GSRedactableXMLSignatureTest extends AbstractXMLRSSTest {
     public void testRedactNonRedactable() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try(InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", false);
         Document document = sig.sign();
@@ -81,10 +86,13 @@ public class GSRedactableXMLSignatureTest extends AbstractXMLRSSTest {
     }
 
     @Test
-    public void testAnexPublicKey() throws Exception {
+    public void testAnnexPublicKey() throws Exception {
         RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
+
         sig.initSign(keyPair);
-        sig.setDocument(new FileInputStream("testdata/vehicles.xml"));
+        try(InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
         sig.addSignSelector("#xpointer(id('a1'))", true);
         sig.addSignSelector("#xpointer(id('a2'))", false);
 
@@ -93,6 +101,34 @@ public class GSRedactableXMLSignatureTest extends AbstractXMLRSSTest {
 
         Node publicKeyNode = Dereferencer.dereference("SignaturePublicKey", document);
         assertNotNull(publicKeyNode);
+
+        sig.initVerify(null);
+        sig.setDocument(document);
+        assertTrue(sig.verify());
+    }
+
+    @Test
+    public void testAnnexPublicKeyRedact() throws Exception {
+        RedactableXMLSignature sig = RedactableXMLSignature.getInstance(algorithm);
+
+        sig.initSign(keyPair);
+        try(InputStream is = new FileInputStream("testdata/vehicles.xml")) {
+            sig.setDocument(is);
+        }
+
+        sig.addSignSelector("#xpointer(id('a1'))", true);
+        sig.addSignSelector("#xpointer(id('a2'))", false);
+
+        Document document = sig.sign(true);
+        printDocument(document);
+
+        Node publicKeyNode = Dereferencer.dereference("SignaturePublicKey", document);
+        assertNotNull(publicKeyNode);
+
+        sig.initRedact(null);
+        sig.setDocument(document);
+        sig.addRedactSelector("#xpointer(id('a1'))");
+        sig.redact();
 
         sig.initVerify(null);
         sig.setDocument(document);
